@@ -325,7 +325,7 @@ export default function DirectoriesPage() {
               sub={getSub(selected.id)}
               onClose={() => setSelected(null)}
               onStartSubmit={(e: React.MouseEvent) => handleStartSubmit(selected, e)}
-              onStatusChange={(s) => handleStatusChange(selected, s)}
+              onStatusChange={(s: string) => handleStatusChange(selected, s)}
               submitting={submitting === selected.id}
             />
           </div>

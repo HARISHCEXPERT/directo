@@ -1,0 +1,79 @@
+{
+  "manifest_version": 3,
+  "name": "Directo — SaaS Launch Autofill",
+  "version": "0.1.0",
+  "description": "Auto-fill 100+ SaaS directory submission forms with your product details. Powered by Directo.",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": [
+    "https://*.producthunt.com/*",
+    "https://betalist.com/*",
+    "https://*.saashub.com/*",
+    "https://*.alternativeto.net/*",
+    "https://*.indiehackers.com/*",
+    "https://*.uneed.best/*",
+    "https://*.toolify.ai/*",
+    "https://*.theresanaiforthat.com/*",
+    "https://news.ycombinator.com/*",
+    "https://*.reddit.com/*",
+    "https://twitter.com/*",
+    "https://x.com/*",
+    "https://*.linkedin.com/*",
+    "http://localhost:3000/*",
+    "https://*.directo.app/*",
+    "https://*.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Directo — autofill directory"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.producthunt.com/*",
+        "https://betalist.com/*",
+        "https://*.saashub.com/*",
+        "https://*.alternativeto.net/*",
+        "https://*.indiehackers.com/*",
+        "https://*.uneed.best/*",
+        "https://*.toolify.ai/*",
+        "https://*.theresanaiforthat.com/*"
+      ],
+      "js": [
+        "lib/fill-helpers.js",
+        "lib/directories.js",
+        "lib/success-detectors.js",
+        "content/fillers/producthunt.js",
+        "content/fillers/betalist.js",
+        "content/fillers/saashub.js",
+        "content/fillers/alternativeto.js",
+        "content/fillers/indiehackers.js",
+        "content/fillers/uneed.js",
+        "content/fillers/toolify.js",
+        "content/fillers/taaft.js",
+        "content/overlay.js"
+      ],
+      "css": ["content/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

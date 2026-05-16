@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   const isPaid = profile?.plan && profile.plan !== 'free'
+  const limit = isPaid ? 999 : 5
 
   const { count } = await supa
     .from('ai_generations')

@@ -1,7 +1,7 @@
 // Directo extension — API client wrapper
 // Reads stored token + Directo base URL, talks to /api/extension/*
 
-const DEFAULT_BASE = 'http://localhost:3000'
+const DEFAULT_BASE = 'https://dicrecto.vercel.app'
 
 export async function getConfig() {
   const data = await chrome.storage.local.get(['directoToken', 'directoBase'])

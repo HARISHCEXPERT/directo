@@ -1,26 +1,33 @@
 {
   "manifest_version": 3,
-  "name": "Directo — SaaS Launch Autofill",
-  "version": "0.1.0",
-  "description": "Auto-fill 100+ SaaS directory submission forms with your product details. Powered by Directo.",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "name": "Directo — AI Launch Autofill",
+  "version": "0.2.0",
+  "description": "AI auto-fills any SaaS directory submission form. Auto-detects when your listing is approved. By Directo.",
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"],
   "host_permissions": [
     "https://*.producthunt.com/*",
-    "https://betalist.com/*",
+    "https://*.betalist.com/*",
     "https://*.saashub.com/*",
     "https://*.alternativeto.net/*",
     "https://*.indiehackers.com/*",
     "https://*.uneed.best/*",
     "https://*.toolify.ai/*",
     "https://*.theresanaiforthat.com/*",
-    "https://news.ycombinator.com/*",
-    "https://*.reddit.com/*",
-    "https://twitter.com/*",
-    "https://x.com/*",
-    "https://*.linkedin.com/*",
-    "http://localhost:3000/*",
+    "https://*.startupbase.io/*",
+    "https://*.launching.today/*",
+    "https://*.tinylaunch.com/*",
+    "https://*.fazier.com/*",
+    "https://*.peerlist.io/*",
+    "https://*.starterstory.com/*",
+    "https://*.allthingsai.com/*",
+    "https://*.futuretools.io/*",
+    "https://*.aitoolhunt.com/*",
+    "https://*.toolpilot.ai/*",
+    "https://*.illustration.ai/*",
+    "https://*.opentools.ai/*",
+    "https://dicrecto.vercel.app/*",
     "https://*.directo.app/*",
-    "https://*.vercel.app/*"
+    "http://localhost:3000/*"
   ],
   "background": {
     "service_worker": "background/service-worker.js",
@@ -33,7 +40,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Directo — autofill directory"
+    "default_title": "Directo — AI autofill"
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -44,30 +51,37 @@
     {
       "matches": [
         "https://*.producthunt.com/*",
-        "https://betalist.com/*",
+        "https://*.betalist.com/*",
         "https://*.saashub.com/*",
         "https://*.alternativeto.net/*",
         "https://*.indiehackers.com/*",
         "https://*.uneed.best/*",
         "https://*.toolify.ai/*",
-        "https://*.theresanaiforthat.com/*"
+        "https://*.theresanaiforthat.com/*",
+        "https://*.startupbase.io/*",
+        "https://*.launching.today/*",
+        "https://*.tinylaunch.com/*",
+        "https://*.fazier.com/*",
+        "https://*.peerlist.io/*",
+        "https://*.starterstory.com/*",
+        "https://*.allthingsai.com/*",
+        "https://*.futuretools.io/*",
+        "https://*.aitoolhunt.com/*",
+        "https://*.toolpilot.ai/*",
+        "https://*.illustration.ai/*",
+        "https://*.opentools.ai/*"
       ],
       "js": [
         "lib/fill-helpers.js",
         "lib/directories.js",
-        "lib/success-detectors.js",
-        "content/fillers/producthunt.js",
-        "content/fillers/betalist.js",
-        "content/fillers/saashub.js",
-        "content/fillers/alternativeto.js",
-        "content/fillers/indiehackers.js",
-        "content/fillers/uneed.js",
-        "content/fillers/toolify.js",
-        "content/fillers/taaft.js",
+        "content/scanner.js",
+        "content/ai-filler.js",
+        "content/approval-detector.js",
         "content/overlay.js"
       ],
       "css": ["content/overlay.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "web_accessible_resources": [

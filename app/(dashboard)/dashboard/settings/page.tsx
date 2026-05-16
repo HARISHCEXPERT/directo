@@ -259,21 +259,33 @@ if (profile?.plan) setCurrentPlan(profile.plan)
 
       {/* API KEYS */}
       {activeTab === 'API Keys' && (
-        <div className="max-w-xl space-y-5">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-2">API Keys</h3>
-            <p className="text-zinc-500 text-xs mb-5">Available on Growth plan.</p>
-            <div className="bg-zinc-900 border border-violet-500/20 rounded-xl p-5 text-center">
-              <p className="text-3xl mb-3">🔒</p>
-              <p className="text-zinc-300 text-sm font-medium mb-1">Upgrade to access API</p>
-              <p className="text-zinc-600 text-xs mb-4">Get full API access and webhooks on Growth plan</p>
-              <button className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-6 py-2 rounded-lg transition">
-                Upgrade to Growth →
-              </button>
-            </div>
+  <div className="max-w-xl space-y-5">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+      <h3 className="text-sm font-semibold text-white mb-2">API Keys</h3>
+      {currentPlan === 'free' ? (
+        <>
+          <p className="text-zinc-500 text-xs mb-5">Available on Pro plan and above.</p>
+          <div className="bg-zinc-900 border border-violet-500/20 rounded-xl p-5 text-center">
+            <p className="text-3xl mb-3">🔒</p>
+            <p className="text-zinc-300 text-sm font-medium mb-1">Upgrade to access API</p>
+            <p className="text-zinc-600 text-xs mb-4">Get full API access and webhooks on Pro plan</p>
+            <button className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-6 py-2 rounded-lg transition">
+              Upgrade to Pro →
+            </button>
           </div>
-        </div>
+        </>
+      ) : (
+        <>
+          <p className="text-zinc-500 text-xs mb-5">Your {currentPlan} plan includes API access.</p>
+          <div className="bg-zinc-800/40 rounded-lg p-4">
+            <p className="text-xs text-zinc-400 font-medium mb-2">Coming soon</p>
+            <p className="text-zinc-500 text-xs">API keys will be available here shortly.</p>
+          </div>
+        </>
       )}
+    </div>
+  </div>
+)}
     </>
   )
 }

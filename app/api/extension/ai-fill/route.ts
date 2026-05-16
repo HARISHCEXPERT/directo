@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
     .eq('user_id', auth.userId)
     .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
 
-  const limit = isPaid ? 999 : 5
-  if ((count || 0) >= limit) {
+  const quotaLimit = isPaid ? 999 : 5
+if ((count || 0) >= quotaLimit) {
     return NextResponse.json({
       error: isPaid ? 'Monthly limit reached' : 'Free tier limit (5/month) reached. Upgrade for unlimited fills.'
     }, { status: 429 })

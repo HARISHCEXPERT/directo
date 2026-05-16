@@ -15,6 +15,7 @@ export default function SettingsPage() {
     website: '',
   })
   const supabase = createClient()
+  const [currentPlan, setCurrentPlan] = useState('free')
 
   useEffect(() => {
     const load = async () => {
@@ -26,6 +27,12 @@ export default function SettingsPage() {
         twitter: user.user_metadata?.twitter || '',
         website: user.user_metadata?.website || '',
       })
+      const { data: profile } = await supabase
+  .from('profiles')
+  .select('plan')
+  .eq('id', user.id)
+  .single()
+if (profile?.plan) setCurrentPlan(profile.plan)
       setLoading(false)
     }
     load()
@@ -174,43 +181,49 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* BILLING */}
-      {activeTab === 'Billing' && (
-        <div className="max-w-xl space-y-5">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-5">Current Plan</h3>
-            <div className="flex items-center justify-between p-4 bg-violet-600/10 border border-violet-500/20 rounded-xl mb-5">
-              <div>
-                <p className="text-white font-semibold">Free Plan</p>
-                <p className="text-zinc-400 text-xs mt-1">1 product · 10 directory submissions</p>
+     {/* BILLING */}
+{activeTab === 'Billing' && (
+  <div className="max-w-xl space-y-5">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+      <h3 className="text-sm font-semibold text-white mb-5">Current Plan</h3>
+      <div className="flex items-center justify-between p-4 bg-violet-600/10 border border-violet-500/20 rounded-xl mb-5">
+        <div>
+          <p className="text-white font-semibold capitalize">
+            {currentPlan === 'free' ? 'Free Plan' : currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1) + ' Plan'}
+          </p>
+          <p className="text-zinc-400 text-xs mt-1">
+            {currentPlan === 'free' && '1 product · 10 directory submissions'}
+            {currentPlan === 'starter' && '1 launch · 50 directories · AI content'}
+            {currentPlan === 'growth' && 'Unlimited products · 90+ directories · Backlink monitoring'}
+          </p>
+        </div>
+        <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-full">Current</span>
+      </div>
+      <div className="space-y-3">
+        {[
+          { name: 'Starter', price: '$29', desc: '1 launch · 50 directories · AI content', highlight: false },
+          { name: 'Growth', price: '$49', desc: 'Unlimited products · 90+ directories · Backlink monitoring', highlight: true },
+        ].map(plan => (
+          <div key={plan.name} className={`flex items-center justify-between p-4 rounded-xl border ${plan.highlight ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-800 bg-zinc-800/30'}`}>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-white font-semibold text-sm">{plan.name}</p>
+                {plan.highlight && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Popular</span>}
               </div>
-              <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-full">Current</span>
+              <p className="text-zinc-500 text-xs mt-0.5">{plan.desc}</p>
             </div>
-            <div className="space-y-3">
-              {[
-                { name: 'Starter', price: '$29', desc: '1 launch · 50 directories · AI content', highlight: false },
-                { name: 'Growth', price: '$49', desc: 'Unlimited products · 90+ directories · Backlink monitoring', highlight: true },
-              ].map(plan => (
-                <div key={plan.name} className={`flex items-center justify-between p-4 rounded-xl border ${plan.highlight ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-800 bg-zinc-800/30'}`}>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-white font-semibold text-sm">{plan.name}</p>
-                      {plan.highlight && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Popular</span>}
-                    </div>
-                    <p className="text-zinc-500 text-xs mt-0.5">{plan.desc}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white font-bold">{plan.price}</p>
-                    <button className={`text-xs mt-1 px-4 py-1.5 rounded-lg transition ${plan.highlight ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'border border-zinc-700 hover:border-zinc-500 text-zinc-300'}`}>
-                      Upgrade
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="text-right">
+              <p className="text-white font-bold">{plan.price}</p>
+              <button className={`text-xs mt-1 px-4 py-1.5 rounded-lg transition ${plan.highlight ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'border border-zinc-700 hover:border-zinc-500 text-zinc-300'}`}>
+                Upgrade
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* NOTIFICATIONS */}
       {activeTab === 'Notifications' && (

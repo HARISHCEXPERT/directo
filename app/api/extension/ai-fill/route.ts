@@ -75,8 +75,7 @@ RULES:
 - Generate platform-appropriate content (PH = exciting launch copy, HN = technical, Reddit = casual)
 - Return ONLY valid JSON, no explanation`
 
-Example: {"__directo_f_0": "Directo", "__directo_f_1": "Launch your SaaS everywhere"}`
-
+Example output: __directo_f_0 maps to Directo, __directo_f_1 maps to Launch your SaaS everywhere\``
   try {
     const Anthropic = (await import('@anthropic-ai/sdk')).default
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

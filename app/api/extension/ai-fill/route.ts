@@ -13,7 +13,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No fields provided' }, { status: 400 })
   }
 
-  // Get product info
   const supa = getServiceSupabase()
   const { data: products } = await supa
     .from('products')
@@ -27,29 +26,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No product found' }, { status: 404 })
   }
 
-  // Check quota
-const { data: profile } = await supa
-  .from('profiles')
-  .select('plan')
-  .eq('id', auth.userId)
-  .single()
+  const { data: profile } = await supa
+    .from('profiles')
+    .select('plan')
+    .eq('id', auth.userId)
+    .single()
 
-const isPaid = profile?.plan && profile.plan !== 'free'
+  const isPaid = profile?.plan && profile.plan !== 'free'
 
-// Count this month's usage
-const { count } = await supa
-  .from('ai_generations')
-  .select('*', { count: 'exact', head: true })
-  .eq('user_id', auth.userId)
-  .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+  const { count } = await supa
+    .from('ai_generations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', auth.userId)
+    .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
 
-const limit = isPaid ? 999 : 5
-if ((count || 0) >= limit) {
-  return NextResponse.json({ 
-    error: isPaid ? 'Monthly limit reached' : 'Free tier limit (5/month) reached. Upgrade for unlimited fills.' 
-  }, { status: 429 })
-}
-  // Build prompt for Claude
+  const limit = isPaid ? 999 : 5
+  if ((count || 0) >= limit) {
+    return NextResponse.json({
+      error: isPaid ? 'Monthly limit reached' : 'Free tier limit (5/month) reached. Upgrade for unlimited fills.'
+    }, { status: 429 })
+  }
+
   const prompt = `You are helping auto-fill a SaaS directory submission form.
 
 PRODUCT INFO:
@@ -73,9 +70,9 @@ RULES:
 - For select fields: return closest matching option value
 - Respect maxLength limits strictly
 - Generate platform-appropriate content (PH = exciting launch copy, HN = technical, Reddit = casual)
-- Return ONLY valid JSON, no explanation`
+- Return ONLY valid JSON, no explanation
+- Example: {"__directo_f_0": "Directo", "__directo_f_1": "Launch your SaaS everywhere"}`
 
-Example output: __directo_f_0 maps to Directo, __directo_f_1 maps to Launch your SaaS everywhere\``
   try {
     const Anthropic = (await import('@anthropic-ai/sdk')).default
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -87,16 +84,14 @@ Example output: __directo_f_0 maps to Directo, __directo_f_1 maps to Launch your
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    
-    // Parse JSON from response
+
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return NextResponse.json({ error: 'AI returned invalid response' }, { status: 500 })
     }
 
     const mapping = JSON.parse(jsonMatch[0])
-    
-    // Log AI usage
+
     const inputTokens = message.usage.input_tokens
     const outputTokens = message.usage.output_tokens
     const costUsd = (inputTokens * 0.00000025) + (outputTokens * 0.00000125)

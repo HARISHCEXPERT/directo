@@ -27,6 +27,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No product found' }, { status: 404 })
   }
 
+  // Check quota
+const { data: profile } = await supa
+  .from('profiles')
+  .select('plan')
+  .eq('id', auth.userId)
+  .single()
+
+const isPaid = profile?.plan && profile.plan !== 'free'
+
+// Count this month's usage
+const { count } = await supa
+  .from('ai_generations')
+  .select('*', { count: 'exact', head: true })
+  .eq('user_id', auth.userId)
+  .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+
+const limit = isPaid ? 999 : 5
+if ((count || 0) >= limit) {
+  return NextResponse.json({ 
+    error: isPaid ? 'Monthly limit reached' : 'Free tier limit (5/month) reached. Upgrade for unlimited fills.' 
+  }, { status: 429 })
+}
   // Build prompt for Claude
   const prompt = `You are helping auto-fill a SaaS directory submission form.
 
@@ -42,13 +64,16 @@ DIRECTORY: ${directoryName || directorySlug || url}
 FORM FIELDS:
 ${JSON.stringify(fields, null, 2)}
 
-Return a JSON object mapping each field's "id" to the best value to fill in.
-Rules:
-- For select fields, return the closest matching option value
-- Respect maxLength limits
-- Generate platform-appropriate taglines (concise for PH, technical for HN)
-- Skip fields that don't apply
-- Return ONLY valid JSON, no explanation
+Return a JSON object mapping each field's "id" to the best value.
+
+RULES:
+- Write DETAILED, compelling descriptions (minimum 150 words for description fields)
+- For tagline fields: concise but punchy (under 60 chars)
+- For description/about fields: write full paragraphs, highlight key features, benefits, use cases
+- For select fields: return closest matching option value
+- Respect maxLength limits strictly
+- Generate platform-appropriate content (PH = exciting launch copy, HN = technical, Reddit = casual)
+- Return ONLY valid JSON, no explanation`
 
 Example: {"__directo_f_0": "Directo", "__directo_f_1": "Launch your SaaS everywhere"}`
 

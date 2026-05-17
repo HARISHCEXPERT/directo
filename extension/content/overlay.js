@@ -63,6 +63,34 @@
     return null
   }
 
+  // Wait until the page's field count stops changing (DOM has settled).
+  // SPA forms (ProductHunt, IndieHackers) render fields asynchronously — if we scan too early
+  // we miss half the inputs. This polls field count until it's stable for `stableMs`.
+  function waitForDomStable(timeoutMs = 7000, stableMs = 1500) {
+    return new Promise(resolve => {
+      const start = Date.now()
+      let lastCount = -1
+      let stableSince = Date.now()
+      const t = setInterval(() => {
+        const count = document.querySelectorAll(
+          'input:not([type="hidden"]):not([type="submit"]), textarea, select, [contenteditable="true"], [role="textbox"]'
+        ).length
+        if (count !== lastCount) {
+          lastCount = count
+          stableSince = Date.now()
+        } else if (count > 0 && Date.now() - stableSince >= stableMs) {
+          clearInterval(t)
+          resolve(count)
+          return
+        }
+        if (Date.now() - start >= timeoutMs) {
+          clearInterval(t)
+          resolve(lastCount)
+        }
+      }, 250)
+    })
+  }
+
   // Wait for the form step to change. Polls signature + URL. Resolves when either changes,
   // or rejects on timeout.
   function waitForStepChange(prevSig, timeoutMs = 8000) {
@@ -166,7 +194,18 @@
         product, queue, step,
         body: `<div class="__directo_status">
           <div class="__directo_spinner"></div>
-          AI is filling step ${step}...
+          Waiting for form to fully load...
+        </div>`,
+      })
+
+      // Wait for DOM to settle — critical for SPA forms (PH, IH) that render fields lazily
+      const finalFieldCount = await waitForDomStable(8000, 1700)
+
+      render({
+        product, queue, step,
+        body: `<div class="__directo_status">
+          <div class="__directo_spinner"></div>
+          AI reading ${finalFieldCount} fields on step ${step}...
         </div>`,
       })
 

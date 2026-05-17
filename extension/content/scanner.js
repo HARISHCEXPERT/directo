@@ -1,21 +1,24 @@
 // Universal form scanner — collects metadata about EVERY visible form field
-// on the page so AI can decide what to fill it with.
+// on the page (including contenteditable rich-text editors) so AI can fill them.
 
 ;(function () {
 
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'password', 'file'])
-  const SENSITIVE_HINTS = /password|otp|captcha|payment|card|cvv|email|phone|mobile/i
+  const SENSITIVE_HINTS = /password|otp|captcha|payment|card\s*number|cvv|security\s*code|mobile\s*otp/i
 
   function isVisible(el) {
-    if (!el || el.offsetParent === null) {
-      // offsetParent can be null even for visible position:fixed elements
-      const cs = window.getComputedStyle(el)
-      if (cs.display === 'none' || cs.visibility === 'hidden') return false
-    }
+    if (!el) return false
+    const cs = window.getComputedStyle(el)
+    if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false
     const r = el.getBoundingClientRect()
     return r.width > 4 && r.height > 4
   }
 
+  function clean(s) {
+    return (s || '').replace(/\s+/g, ' ').trim().slice(0, 220)
+  }
+
+  // ---- Label discovery — checks 6 strategies ----
   function findLabel(el) {
     // 1. Linked label
     if (el.id) {
@@ -28,23 +31,47 @@
     // 3. aria-labelledby
     const labelledBy = el.getAttribute('aria-labelledby')
     if (labelledBy) {
-      const ref = document.getElementById(labelledBy)
-      if (ref) return clean(ref.textContent)
+      const refs = labelledBy.split(/\s+/).map(id => document.getElementById(id)).filter(Boolean)
+      const text = refs.map(r => r.textContent).join(' ')
+      if (text.trim()) return clean(text)
     }
-    // 4. Preceding heading/label-ish sibling within parent
-    const parent = el.closest('div, fieldset, section, li, td, .form-group, .field, [role="group"]')
-    if (parent) {
-      const candidates = parent.querySelectorAll('label, .label, h2, h3, h4, h5, h6, .text-sm, span')
-      for (const c of candidates) {
+    // 4. Climb ancestors looking for label-ish siblings ABOVE the input
+    let node = el
+    for (let depth = 0; depth < 5; depth++) {
+      const parent = node.parentElement
+      if (!parent) break
+      // Check label-like elements that are siblings BEFORE this node
+      const candidates = Array.from(parent.querySelectorAll('label, .label, [class*="label" i], h2, h3, h4, h5, h6, [class*="title" i], [class*="heading" i]'))
+        .filter(c => c !== el && !c.contains(el) && c.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
+      for (const c of candidates.reverse()) {
         const t = clean(c.textContent)
-        if (t && t.length < 120 && !c.contains(el)) return t
+        if (t && t.length >= 2 && t.length < 120) return t
       }
+      node = parent
+      if (parent.tagName === 'FORM' || parent.tagName === 'BODY') break
     }
+    // 5. Previous sibling text within parent
+    const sib = el.previousElementSibling
+    if (sib) {
+      const t = clean(sib.textContent)
+      if (t && t.length < 120) return t
+    }
+    // 6. Fall back to placeholder
+    if (el.placeholder) return clean(el.placeholder)
     return null
   }
 
-  function clean(s) {
-    return (s || '').replace(/\s+/g, ' ').trim().slice(0, 200)
+  // ---- Helper-text near a field (e.g. "max 60 chars", "Tell us about your launch") ----
+  function findHelperText(el) {
+    const parent = el.closest('div, fieldset, section, li, td')
+    if (!parent) return null
+    const nodes = parent.querySelectorAll('p, small, .helper, .hint, [class*="help" i], [class*="hint" i], [class*="description" i], [class*="subtitle" i]')
+    for (const n of nodes) {
+      if (n.contains(el)) continue
+      const t = clean(n.textContent)
+      if (t && t.length >= 4 && t.length < 200) return t
+    }
+    return null
   }
 
   function isSensitive(el, label) {
@@ -55,21 +82,23 @@
     return SENSITIVE_HINTS.test(blob)
   }
 
+  // ---- Universal field scanner ----
   function scanForm() {
     const fields = []
-    const all = document.querySelectorAll('input, textarea, select')
     let idx = 0
-    for (const el of all) {
+
+    // 1. Standard inputs, textareas, selects
+    const inputs = document.querySelectorAll('input, textarea, select')
+    for (const el of inputs) {
       const tag = el.tagName.toLowerCase()
       const type = (el.type || tag).toLowerCase()
       if (SKIP_TYPES.has(type)) continue
       if (!isVisible(el)) continue
+      if (el.readOnly || el.disabled) continue
 
       const label = findLabel(el)
       if (isSensitive(el, label)) continue
-      if (el.readOnly || el.disabled) continue
 
-      // Stamp a stable id we control
       const directoId = `__directo_f_${idx++}`
       el.setAttribute('data-directo-fid', directoId)
 
@@ -80,6 +109,7 @@
         placeholder: el.placeholder || null,
         label: label || null,
         ariaLabel: el.getAttribute('aria-label') || null,
+        helperText: findHelperText(el),
         maxLength: el.maxLength > 0 ? el.maxLength : null,
         required: !!el.required,
         currentValue: el.value || '',
@@ -91,8 +121,35 @@
         if (field.options.length > 60) field.options = field.options.slice(0, 60)
       }
       fields.push(field)
-      if (fields.length >= 40) break
+      if (fields.length >= 60) return fields
     }
+
+    // 2. Contenteditable divs (rich-text editors, e.g. Product Hunt description, IndieHackers body)
+    const editables = document.querySelectorAll('[contenteditable="true"], [contenteditable=""], [role="textbox"]')
+    for (const el of editables) {
+      if (!isVisible(el)) continue
+      const label = findLabel(el)
+      if (isSensitive(el, label)) continue
+      // Skip if already a child of a form field we captured
+      if (el.closest('[data-directo-fid]')) continue
+
+      const directoId = `__directo_f_${idx++}`
+      el.setAttribute('data-directo-fid', directoId)
+      fields.push({
+        id: directoId,
+        type: 'richtext',
+        name: el.getAttribute('name') || null,
+        placeholder: el.getAttribute('data-placeholder') || el.getAttribute('placeholder') || null,
+        label: label || null,
+        ariaLabel: el.getAttribute('aria-label') || null,
+        helperText: findHelperText(el),
+        maxLength: null,
+        required: el.getAttribute('aria-required') === 'true',
+        currentValue: clean(el.textContent),
+      })
+      if (fields.length >= 60) break
+    }
+
     return fields
   }
 
@@ -122,9 +179,30 @@
     return false
   }
 
+  function fillContentEditable(el, value) {
+    try {
+      el.focus()
+      // Replace existing content
+      el.innerHTML = ''
+      // Insert as plain text (preserves line breaks)
+      const text = String(value || '')
+      const lines = text.split('\n')
+      for (let i = 0; i < lines.length; i++) {
+        if (i > 0) el.appendChild(document.createElement('br'))
+        el.appendChild(document.createTextNode(lines[i]))
+      }
+      // Dispatch input events that most rich text editors listen to
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }))
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+      el.dispatchEvent(new Event('blur', { bubbles: true }))
+      return true
+    } catch { return false }
+  }
+
   function fillField(field, value) {
     const el = findFieldEl(field)
     if (!el) return false
+    if (field.type === 'richtext' || el.isContentEditable) return fillContentEditable(el, value)
     if (el.tagName === 'SELECT') return fillSelectSmart(el, value)
     if (field.maxLength && String(value).length > field.maxLength) {
       value = String(value).slice(0, field.maxLength)
@@ -132,27 +210,19 @@
     return window.__directoFill.nativeSetValue(el, value)
   }
 
-  // ----- ACTION BUTTON DETECTION -----
-  // Find the most likely "next/continue" or "submit" button on the current step.
-  // Returns: { el, kind: 'next' | 'submit' } | null
-  // Heuristic-based (no AI cost) using button text + aria-label + name patterns.
-
+  // ---- ACTION BUTTON DETECTION ----
   const NEXT_RX = /^(next|continue|proceed|forward|save\s*&?\s*continue|step\s*\d|next\s*step|get\s*started|start|begin|let'?s\s*(go|start)|move\s*on)\b/i
   const SUBMIT_RX = /^(submit|publish|launch(\s+now)?|post|create(\s+(post|launch|product))?|finish|save\s*&?\s*publish|complete|done|send(\s+for\s+review)?|review|go\s+live)\b/i
   const BACK_RX = /^(back|prev|previous|cancel|close|exit)/i
 
   function btnText(el) {
-    const t = (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').replace(/\s+/g, ' ').trim()
-    return t
+    return (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').replace(/\s+/g, ' ').trim()
   }
-
   function isClickable(el) {
     if (!el || el.disabled) return false
     if (el.getAttribute('aria-disabled') === 'true') return false
-    if (!isVisible(el)) return false
-    return true
+    return isVisible(el)
   }
-
   function findActionButton() {
     const sels = 'button, input[type="submit"], input[type="button"], a[role="button"], [role="button"]'
     const all = Array.from(document.querySelectorAll(sels)).filter(isClickable)
@@ -161,9 +231,7 @@
       const text = btnText(el)
       if (!text || text.length > 60) continue
       if (BACK_RX.test(text)) continue
-      // Strongest signal: explicit type=submit
       if (el.type === 'submit' && !submitBtn) {
-        // If the submit btn text says "next/continue" treat as next
         if (NEXT_RX.test(text)) { nextBtn = nextBtn || el; continue }
         submitBtn = el
         continue
@@ -171,17 +239,15 @@
       if (NEXT_RX.test(text)) { nextBtn = nextBtn || el; continue }
       if (SUBMIT_RX.test(text)) { submitBtn = submitBtn || el; continue }
     }
-    // Prefer NEXT if both — user clicks submit themselves
     if (nextBtn) return { el: nextBtn, kind: 'next', text: btnText(nextBtn) }
     if (submitBtn) return { el: submitBtn, kind: 'submit', text: btnText(submitBtn) }
     return null
   }
 
-  // A "form signature" — used to detect when the step has actually changed.
   function formSignature() {
-    const fields = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea, select')
+    const fields = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea, select, [contenteditable="true"]')
     return Array.from(fields).slice(0, 30).map(f => {
-      return [f.name, f.id, f.placeholder, f.getAttribute('aria-label')].filter(Boolean).join('|')
+      return [f.name, f.id, f.placeholder, f.getAttribute('aria-label'), f.getAttribute('data-placeholder')].filter(Boolean).join('|')
     }).join('::')
   }
 

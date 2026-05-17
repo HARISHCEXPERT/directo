@@ -137,8 +137,8 @@
   // Returns: { el, kind: 'next' | 'submit' } | null
   // Heuristic-based (no AI cost) using button text + aria-label + name patterns.
 
-  const NEXT_RX = /^(next|continue|proceed|forward|save\s*&?\s*continue|step\s*\d|next\s*step|saqve)/i
-  const SUBMIT_RX = /^(submit|publish|launch|post|create|finish|save\s*&?\s*publish|complete|done|send for review|done|review)/i
+  const NEXT_RX = /^(next|continue|proceed|forward|save\s*&?\s*continue|step\s*\d|next\s*step|get\s*started|start|begin|let'?s\s*(go|start)|move\s*on)\b/i
+  const SUBMIT_RX = /^(submit|publish|launch(\s+now)?|post|create(\s+(post|launch|product))?|finish|save\s*&?\s*publish|complete|done|send(\s+for\s+review)?|review|go\s+live)\b/i
   const BACK_RX = /^(back|prev|previous|cancel|close|exit)/i
 
   function btnText(el) {

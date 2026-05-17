@@ -296,24 +296,36 @@
     const skipFinal = document.getElementById('__directo_skip_final')
     if (skipFinal) skipFinal.onclick = () => queueAdvance({ action: 'skipped', closeTab: true })
 
-    // Watch for actual submission
+    // Watch for actual submission — STRICT to avoid false positives on multi-step forms
     const initialUrl = location.href
     const initialForm = document.querySelector('form')
+    const initialFieldCount = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea').length
     let detected = false
     const detector = setInterval(async () => {
       if (detected) { clearInterval(detector); return }
-      const urlChanged = location.href !== initialUrl
-      const formGone = initialForm && !document.body.contains(initialForm)
-      const text = (document.body?.innerText || '').slice(0, 4000)
-      const successText = /thank you|received your|in queue|under review|pending review|submitted|moderation|will review|your submission/i.test(text)
-      const stillOnSubmit = window.__directoIsSubmitPage(location.href, dir)
 
-      if ((urlChanged && !stillOnSubmit) || (formGone && successText) || (successText && !stillOnSubmit)) {
+      const urlChanged = location.href !== initialUrl
+      const stillOnSubmit = window.__directoIsSubmitPage(location.href, dir)
+      const formGone = initialForm && !document.body.contains(initialForm)
+      const text = (document.body?.innerText || '').slice(0, 5000)
+      const successText = /thank you|received your|in queue|under review|pending review|your submission|moderation|will review|successfully (submitted|posted|published)|listing is live|congratulations/i.test(text)
+
+      // SAFETY — if there are still form fields visible, this is NOT a success page,
+      // it's a multi-step transition. Skip detection.
+      const currentFieldCount = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea').length
+      const looksLikeFormStill = currentFieldCount >= 2 && currentFieldCount >= initialFieldCount * 0.5
+
+      // Require strong signal: success text on a non-submit page, AND no form is still visible.
+      // Pure URL change is no longer enough — too many sites use route changes for multi-step.
+      const stronglyDone = successText && !stillOnSubmit && !looksLikeFormStill
+      const formGoneWithSuccess = formGone && successText && !looksLikeFormStill
+
+      if (stronglyDone || formGoneWithSuccess) {
         detected = true
         clearInterval(detector)
         logSubmission('submitted', {
           verified: true,
-          verificationMethod: urlChanged ? 'success_url' : 'success_text',
+          verificationMethod: 'success_text',
           successUrl: location.href,
         })
         if (isQueueTab) {
@@ -331,6 +343,18 @@
           })
           document.getElementById('__directo_close2').onclick = () => root.remove()
         }
+        return
+      }
+
+      // SIDE-EFFECT: if a NEW step appeared (more fields than before), resume the fill loop.
+      // This handles users clicking buttons we didn't recognize (e.g. "Get Started").
+      if (urlChanged && looksLikeFormStill && stillOnSubmit === false) {
+        // URL changed but it still looks like a form — we're on a new step
+        detected = true
+        clearInterval(detector)
+        // Re-fire the fill loop after a brief settle
+        setTimeout(() => startFillLoop(), 1200)
+        return
       }
     }, 1800)
     setTimeout(() => clearInterval(detector), 12 * 60 * 1000)

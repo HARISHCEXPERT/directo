@@ -194,13 +194,14 @@
             : `<button class="__directo_btn __directo_btn_secondary" id="__directo_close_btn">Close</button>`}
         `,
       })
-      document.getElementById('__directo_retry').onclick = () => location.reload()
-      const skipBtn = document.getElementById('__directo_skip3')
-      if (skipBtn) skipBtn.onclick = async () => {
+      var retryBtn = document.getElementById('__directo_retry')
+      if (retryBtn) retryBtn.onclick = function() { location.reload() }
+      var skipBtn = document.getElementById('__directo_skip3')
+      if (skipBtn) skipBtn.onclick = async function() {
         await queueAdvance({ action: 'failed', reason: 'fill_failed', closeTab: true })
       }
-      const closeBtn = document.getElementById('__directo_close_btn')
-      if (closeBtn) closeBtn.onclick = () => root.remove()
+      var closeBtn = document.getElementById('__directo_close_btn')
+      if (closeBtn) closeBtn.onclick = function() { root.remove() }
       return
     }
 
@@ -219,50 +220,108 @@
       `,
     })
 
-    document.getElementById('__directo_done').onclick = async () => {
+    var doneBtn = document.getElementById('__directo_done')
+    if (doneBtn) doneBtn.onclick = async function() {
+      if (stepObserver) stepObserver.disconnect()
       if (isQueueTab) {
         await queueAdvance({ action: 'submitted', closeTab: true })
       } else {
         logSubmission('submitted', { verified: true, verificationMethod: 'manual_confirm' })
-        window.__directoFill.directoToast(`Marked submitted on ${dir.name}`, 'success')
-        setTimeout(() => root.remove(), 1100)
+        if (window.__directoFill && window.__directoFill.directoToast) {
+          window.__directoFill.directoToast('Marked submitted on ' + dir.name, 'success')
+        }
+        setTimeout(function() { root.remove() }, 1100)
       }
     }
-    const skip4 = document.getElementById('__directo_skip4')
-    if (skip4) skip4.onclick = async () => {
+    var skip4 = document.getElementById('__directo_skip4')
+    if (skip4) skip4.onclick = async function() {
+      if (stepObserver) stepObserver.disconnect()
       await queueAdvance({ action: 'skipped', closeTab: true })
     }
+
+    // ---- Multi-step watcher ----
+    var lastFormHTML = document.querySelector('form') ? document.querySelector('form').innerHTML : ''
+    var lastFieldCount = document.querySelectorAll(
+      'input:not([type=hidden]):not([type=password]):not([type=submit]), textarea, select'
+    ).length
+    var stepObserver = new MutationObserver(function() {
+      if (detected) { stepObserver.disconnect(); return }
+      var currentFormHTML = document.querySelector('form') ? document.querySelector('form').innerHTML : ''
+      var currentFieldCount = document.querySelectorAll(
+        'input:not([type=hidden]):not([type=password]):not([type=submit]), textarea, select'
+      ).length
+      var changed = (currentFieldCount !== lastFieldCount) ||
+                    (currentFormHTML !== lastFormHTML && currentFormHTML.length > 50)
+      if (changed && currentFieldCount > 0) {
+        lastFormHTML = currentFormHTML
+        lastFieldCount = currentFieldCount
+        setTimeout(function() {
+          window.__directoAIFill({ directorySlug: dir.slug, directoryName: dir.name })
+            .then(function(r) {
+              if (r && r.filled > 0) {
+                if (window.__directoFill && window.__directoFill.directoToast) {
+                  window.__directoFill.directoToast('⚡ Next step: ' + r.filled + ' fields filled', 'success')
+                }
+                render({
+                  product,
+                  queue,
+                  success: '✅ ' + r.filled + ' more fields filled',
+                  body: `
+                    <div class="__directo_status">
+                      Review, solve CAPTCHA if any, then submit.
+                      <br><span class="__directo_dim">Still watching for next step...</span>
+                    </div>
+                    <button class="__directo_btn __directo_btn_secondary" id="__directo_done2">${isQueueTab ? "I've submitted — next directory" : "I've submitted — mark done"}</button>
+                  `,
+                })
+                var doneBtn2 = document.getElementById('__directo_done2')
+                if (doneBtn2) doneBtn2.onclick = async function() {
+                  stepObserver.disconnect()
+                  if (isQueueTab) {
+                    await queueAdvance({ action: 'submitted', closeTab: true })
+                  } else {
+                    logSubmission('submitted', { verified: true, verificationMethod: 'manual_confirm' })
+                    setTimeout(function() { root.remove() }, 1100)
+                  }
+                }
+              }
+            })
+        }, 800)
+      }
+    })
+    stepObserver.observe(document.body, { childList: true, subtree: true })
+    setTimeout(function() { stepObserver.disconnect() }, 15 * 60 * 1000)
 
     // ---- 7. Auto-detect submission ----
     const initialUrl = location.href
     const initialForm = document.querySelector('form')
     let detected = false
-    const detector = setInterval(async () => {
+    const detector = setInterval(async function() {
       if (detected) { clearInterval(detector); return }
-      const urlChanged = location.href !== initialUrl
-      const formGone = initialForm && !document.body.contains(initialForm)
-      const successText = /thank you|received|in queue|under review|pending review|submitted|moderation/i.test(
-        document.body?.innerText?.slice(0, 4000) || ''
+      var urlChanged = location.href !== initialUrl
+      var formGone = initialForm && !document.body.contains(initialForm)
+      var successText = /thank you|received|in queue|under review|pending review|submitted|moderation/i.test(
+        document.body && document.body.innerText ? document.body.innerText.slice(0, 4000) : ''
       )
-      const stillOnSubmit = window.__directoIsSubmitPage(location.href, dir)
+      var stillOnSubmit = window.__directoIsSubmitPage(location.href, dir)
 
       if ((urlChanged && !stillOnSubmit) || (formGone && successText) || (successText && !stillOnSubmit)) {
         detected = true
         clearInterval(detector)
+        if (stepObserver) stepObserver.disconnect()
         logSubmission('submitted', {
           verified: true,
           verificationMethod: urlChanged ? 'success_url' : 'success_text',
           successUrl: location.href,
         })
         if (isQueueTab) {
-          // Auto advance after a brief celebration
           render({
             product,
             queue,
             success: `🎉 Submitted on ${escape(dir.name)}! Moving to next directory...`,
             body: `<div class="__directo_status"><div class="__directo_spinner"></div>Loading next directory...</div>`,
           })
-          setTimeout(async () => {
+          setTimeout(async function() {
             await queueAdvance({ action: 'submitted', closeTab: true })
           }, 1500)
         } else {
@@ -271,10 +330,11 @@
             success: `🎉 Submission confirmed on ${escape(dir.name)}!`,
             body: `<button class="__directo_btn __directo_btn_secondary" id="__directo_close2">Close</button>`,
           })
-          document.getElementById('__directo_close2').onclick = () => root.remove()
+          var close2 = document.getElementById('__directo_close2')
+          if (close2) close2.onclick = function() { root.remove() }
         }
       }
     }, 1800)
-    setTimeout(() => clearInterval(detector), 10 * 60 * 1000)
+    setTimeout(function() { clearInterval(detector) }, 10 * 60 * 1000)
   }
 })()

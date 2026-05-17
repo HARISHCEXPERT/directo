@@ -108,7 +108,7 @@ export default function LaunchPage() {
     setStarting(false)
   }
 
-  const cancel = async () => {
+ const cancel = async () => {
   if (!session) return
   if (!confirm('Cancel this launch queue?')) return
   await fetch('/api/extension/launch/advance', {
@@ -116,7 +116,7 @@ export default function LaunchPage() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionId: session.id, action: 'cancel' }),
   })
-  setSession(null)  // ← null karo, cancelled nahi
+  setSession(null)
   setItems([])
 }
 

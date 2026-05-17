@@ -1,3 +1,7 @@
+// POST /api/extension/check-approval
+// Extension reports it saw what looks like a live listing for the user's product.
+// Backend confirms the directory exists, marks submission as 'approved'.
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserFromExtToken, getServiceSupabase } from '@/lib/ext-auth'
 
@@ -8,61 +12,61 @@ export async function POST(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { directorySlug, directoryName, listingUrl, signals, confidence } = await req.json()
-
   const supa = getServiceSupabase()
 
-  // Get user's product
-  const { data: products } = await supa
-    .from('products')
-    .select('id')
-    .eq('user_id', auth.userId)
-    .limit(1)
+  // Find product
+  const { data: prods } = await supa.from('products').select('id, name')
+    .eq('user_id', auth.userId).order('created_at', { ascending: false }).limit(1)
+  const product = prods?.[0]
+  if (!product) return NextResponse.json({ ok: false, error: 'no_product' }, { status: 404 })
 
-  const product = products?.[0]
-  if (!product) return NextResponse.json({ ok: false })
-
-  // Get directory
-  const { data: dirs } = await supa
-    .from('directories')
-    .select('id')
-    .ilike('name', `%${directoryName}%`)
-    .limit(1)
-
-  const dir = dirs?.[0]
-  if (!dir) return NextResponse.json({ ok: false })
-
-  // Check existing submission
-  const { data: existing } = await supa
-    .from('submissions')
-    .select('id, status')
-    .eq('product_id', product.id)
-    .eq('directory_id', dir.id)
-    .single()
-
-  // Already approved — skip
-  if (existing?.status === 'approved') {
-    return NextResponse.json({ ok: true, newlyApproved: false })
+  // Find directory in our DB
+  let directory: any = null
+  if (directorySlug) {
+    const { data: dirs } = await supa.from('directories').select('id, slug, url')
+      .or(`slug.eq.${directorySlug},url.ilike.%${directorySlug}%`).limit(1)
+    directory = dirs?.[0]
+  }
+  if (!directory) {
+    // unknown directory — still acknowledge but don't fail
+    return NextResponse.json({ ok: true, newlyApproved: false, note: 'directory_not_in_db' })
   }
 
-  // Update or insert as approved
+  // Find existing submission row
+  const { data: existing } = await supa.from('submissions')
+    .select('id, status, verified')
+    .eq('product_id', product.id)
+    .eq('directory_id', directory.id)
+    .maybeSingle()
+
+  const wasAlreadyApproved = existing?.status === 'approved'
+
+  const update = {
+    status: 'approved',
+    verified: true,
+    verification_method: 'extension_passive',
+    verified_at: new Date().toISOString(),
+    success_url: listingUrl,
+    submitted_via: 'extension',
+    notes: `Auto-detected · signals: ${(signals || []).join(', ')} · confidence: ${confidence || 'medium'}`,
+  }
+
   if (existing) {
-    await supa.from('submissions')
-      .update({
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        backlink_url: listingUrl,
-      })
-      .eq('id', existing.id)
+    await supa.from('submissions').update(update).eq('id', existing.id)
   } else {
+    // No prior submission — create one as approved (user may have submitted before installing extension)
     await supa.from('submissions').insert({
       product_id: product.id,
-      directory_id: dir.id,
-      status: 'approved',
+      directory_id: directory.id,
       submitted_at: new Date().toISOString(),
-      approved_at: new Date().toISOString(),
-      backlink_url: listingUrl,
+      ...update,
     })
   }
 
-  return NextResponse.json({ ok: true, newlyApproved: true })
+  return NextResponse.json({
+    ok: true,
+    newlyApproved: !wasAlreadyApproved,
+    directorySlug: directory.slug,
+    listingUrl,
+  })
 }

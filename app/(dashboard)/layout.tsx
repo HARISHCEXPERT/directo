@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 const navItems = [
   { icon: '🏠', label: 'Overview', href: '/dashboard' },
-  { icon: '🚀', label: 'Launch Workspace', href: '/dashboard/workspace' },
+  { icon: '🚀', label: 'Launch Queue', href: '/dashboard/launch' },
   { icon: '📁', label: 'Directories', href: '/dashboard/directories' },
   { icon: '✍️', label: 'Social Content', href: '/dashboard/content' },
   { icon: '🧩', label: 'Extension', href: '/dashboard/extension' },

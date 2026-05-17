@@ -62,9 +62,21 @@ export async function fetchProduct(force = false) {
 }
 
 // Report a submission back to Directo dashboard
-export async function logSubmission({ directorySlug, directoryUrl, status }) {
+export async function logSubmission({ directorySlug, directoryUrl, status, verified, verificationMethod, successUrl }) {
   return apiFetch('/api/extension/log-submission', {
     method: 'POST',
-    body: JSON.stringify({ directorySlug, directoryUrl, status }),
+    body: JSON.stringify({ directorySlug, directoryUrl, status, verified, verificationMethod, successUrl }),
+  })
+}
+
+// ---- Launch queue helpers ----
+export async function fetchLaunchStatus() {
+  return apiFetch('/api/extension/launch/status')
+}
+
+export async function advanceLaunch({ sessionId, itemId, action, reason }) {
+  return apiFetch('/api/extension/launch/advance', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId, itemId, action, reason }),
   })
 }

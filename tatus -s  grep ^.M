@@ -1,0 +1,115 @@
+warning: in the working copy of 'app/(dashboard)/dashboard/directories/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(dashboard)/dashboard/settings/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(dashboard)/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/extension/ai-fill/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/extension/check-approval/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/background/service-worker.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/content/overlay.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/lib/api.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/lib/directories.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'extension/popup/popup.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app/(dashboard)/dashboard/directories/page.tsx b/app/(dashboard)/dashboard/directories/page.tsx[m
+[1mindex 172380b..373d806 100644[m
+[1m--- a/app/(dashboard)/dashboard/directories/page.tsx[m
+[1m+++ b/app/(dashboard)/dashboard/directories/page.tsx[m
+[36m@@ -324,8 +324,8 @@[m [mexport default function DirectoriesPage() {[m
+               dir={selected}[m
+               sub={getSub(selected.id)}[m
+               onClose={() => setSelected(null)}[m
+[31m-              onStartSubmit={(e: React.MouseEvent) => handleStartSubmit(selected, e)}[m
+[31m-              onStatusChange={(s: string) => handleStatusChange(selected, s)}[m
+[32m+[m[32m              onStartSubmit={(e) => handleStartSubmit(selected, e)}[m
+[32m+[m[32m              onStatusChange={(s) => handleStatusChange(selected, s)}[m
+               submitting={submitting === selected.id}[m
+             />[m
+           </div>[m
+[1mdiff --git a/app/(dashboard)/dashboard/settings/page.tsx b/app/(dashboard)/dashboard/settings/page.tsx[m
+[1mindex bdfcaca..c565771 100644[m
+[1m--- a/app/(dashboard)/dashboard/settings/page.tsx[m
+[1m+++ b/app/(dashboard)/dashboard/settings/page.tsx[m
+[36m@@ -15,7 +15,6 @@[m [mexport default function SettingsPage() {[m
+     website: '',[m
+   })[m
+   const supabase = createClient()[m
+[31m-  const [currentPlan, setCurrentPlan] = useState('free')[m
+ [m
+   useEffect(() => {[m
+     const load = async () => {[m
+[36m@@ -27,12 +26,6 @@[m [mexport default function SettingsPage() {[m
+         twitter: user.user_metadata?.twitter || '',[m
+         website: user.user_metadata?.website || '',[m
+       })[m
+[31m-      const { data: profile } = await supabase[m
+[31m-  .from('profiles')[m
+[31m-  .select('plan')[m
+[31m-  .eq('id', user.id)[m
+[31m-  .single()[m
+[31m-if (profile?.plan) setCurrentPlan(profile.plan)[m
+       setLoading(false)[m
+     }[m
+     load()[m
+[36m@@ -181,53 +174,43 @@[m [mif (profile?.plan) setCurrentPlan(profile.plan)[m
+         </div>[m
+       )}[m
+ [m
+[31m-    {/* BILLING */}[m
+[31m-{activeTab === 'Billing' && ([m
+[31m-  <div className="max-w-xl space-y-5">[m
+[31m-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">[m
+[31m-      <h3 className="text-sm font-semibold text-white mb-5">Current Plan</h3>[m
+[31m-      <div className="flex items-center justify-between p-4 bg-violet-600/10 border border-violet-500/20 rounded-xl mb-5">[m
+[31m-        <div>[m
+[31m-          <p className="text-white font-semibold capitalize">[m
+[31m-            {currentPlan === 'free' ? 'Free Plan' : currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1) + ' Plan'}[m
+[31m-          </p>[m
+[31m-          <p className="text-zinc-400 text-xs mt-1">[m
+[31m-            {currentPlan === 'free' && '1 product · 10 directory submissions'}[m
+[31m-            {currentPlan === 'starter' && '1 launch · 50 directories · AI content'}[m
+[31m-            {currentPlan === 'scale' && 'Everything in Pro + 500 AI posts/month'}[m
+[31m-            {currentPlan === 'pro' && 'Extension autofill · 100 AI posts/month'}[m
+[31m-            {currentPlan === 'lifetime' && 'Pro features FOREVER · Founding Member'}[m
+[31m-          </p>[m
+[31m-        </div>[m
+[31m-        <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-full">Current</span>[m
+[31m-      </div>[m
+[31m-      {currentPlan === 'free' && ([m
+[31m-        <div className="space-y-3">[m
+[31m-          {[[m
+[31m-            { name: 'Starter', price: '$29', desc: '1 launch · 50 directories · AI content', highlight: false },[m
+[31m-            { name: 'Growth', price: '$49', desc: 'Unlimited products · 90+ directories · Backlink monitoring', highlight: true },[m
+[31m-          ].map(plan => ([m
+[31m-            <div key={plan.name} className={`flex items-center justify-between p-4 rounded-xl border ${plan.highlight ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-800 bg-zinc-800/30'}`}>[m
+[32m+[m[32m      {/* BILLING */}[m
+[32m+[m[32m      {activeTab === 'Billing' && ([m
+[32m+[m[32m        <div className="max-w-xl space-y-5">[m
+[32m+[m[32m          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">[m
+[32m+[m[32m            <h3 className="text-sm font-semibold text-white mb-5">Current Plan</h3>[m
+[32m+[m[32m            <div className="flex items-center justify-between p-4 bg-violet-600/10 border border-violet-500/20 rounded-xl mb-5">[m
+               <div>[m
+[31m-                <div className="flex items-center gap-2">[m
+[31m-                  <p className="text-white font-semibold text-sm">{plan.name}</p>[m
+[31m-                  {plan.highlight && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Popular</span>}[m
+[31m-                </div>[m
+[31m-                <p className="text-zinc-500 text-xs mt-0.5">{plan.desc}</p>[m
+[31m-              </div>[m
+[31m-              <div className="text-right">[m
+[31m-                <p className="text-white font-bold">{plan.price}</p>[m
+[31m-                <button className={`text-xs mt-1 px-4 py-1.5 rounded-lg transition ${plan.highlight ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'border border-zinc-700 hover:border-zinc-500 text-zinc-300'}`}>[m
+[31m-                  Upgrade[m
+[31m-                </button>[m
+[32m+[m[32m                <p className="text-white font-semibold">Free Plan</p>[m
+[32m+[m[32m                <p className="text-zinc-400 text-xs mt-1">1 product · 10 directory submissions</p>[m
+               </div>[m
+[32m+[m[32m              <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-full">Current</span>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <div className="space-y-3">[m
+[32m+[m[32m              {[[m
+[32m+[m[32m                { name: 'Starter', price: '$29', desc: '1 launch · 50 directories · AI content', highlight: false },[m
+[32m+[m[32m                { name: 'Growth', price: '$49', desc: 'Unlimited products · 90+ directories · Backlink monitoring', highlight: true },[m
+[32m+[m[32m              ].map(plan => ([m
+[32m+[m[32m                <div key={plan.name} className={`flex items-center justify-between p-4 rounded-xl border ${plan.highlight ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-800 bg-zinc-800/30'}`}>[m
+[32m+[m[32m                  <div>[m
+[32m+[m[32m                    <div className="flex items-center gap-2">[m
+[32m+[m[32m                      <p className="text-white font-semibold text-sm">{plan.name}</p>[m
+[32m+[m[32m                      {plan.highlight && <span className="text-xs bg-violet-600 text-white px-2 py-0.5 rounded-full">Po

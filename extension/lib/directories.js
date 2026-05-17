@@ -14,7 +14,7 @@ const DIRECTORIES = [
   { slug: 'startupbase',  name: 'Startupbase',          host: /startupbase\.io$/i,         submitPath: /\/(submit|new)/i },
   { slug: 'launchingtoday',name: 'Launching Today',     host: /launching\.today$/i,        submitPath: /\/(submit|new)/i },
   { slug: 'tinylaunch',   name: 'TinyLaunch',           host: /tinylaunch\.com$/i,         submitPath: /\/(submit|new)/i },
-  { slug: 'fazier', name: 'Fazier', host: /fazier\.com$/i, submitPath: /\/(launch|submit|new)/i },
+  { slug: 'fazier',       name: 'Fazier',               host: /fazier\.com$/i,             submitPath: /\/(submit|new)/i },
   { slug: 'peerlist',     name: 'Peerlist',             host: /peerlist\.io$/i,            submitPath: /\/(scout|projects\/new)/i },
   { slug: 'starterstory', name: 'Starter Story',        host: /starterstory\.com$/i,       submitPath: /\/(submit|new)/i },
   { slug: 'allthingsai',  name: 'All Things AI',        host: /allthingsai\.com$/i,        submitPath: /\/(submit|new)/i },

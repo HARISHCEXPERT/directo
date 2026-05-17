@@ -3,7 +3,7 @@
   "name": "Directo — AI Launch Autofill",
   "version": "0.2.0",
   "description": "AI auto-fills any SaaS directory submission form. Auto-detects when your listing is approved. By Directo.",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications", "alarms"],
   "host_permissions": [
     "https://*.producthunt.com/*",
     "https://*.betalist.com/*",

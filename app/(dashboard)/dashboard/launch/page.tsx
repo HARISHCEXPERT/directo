@@ -109,15 +109,16 @@ export default function LaunchPage() {
   }
 
   const cancel = async () => {
-    if (!session) return
-    if (!confirm('Cancel this launch queue?')) return
-    await fetch('/api/extension/launch/advance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId: session.id, action: 'cancel' }),
-    })
-    setSession(s => s ? { ...s, status: 'cancelled' } : null)
-  }
+  if (!session) return
+  if (!confirm('Cancel this launch queue?')) return
+  await fetch('/api/extension/launch/advance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: session.id, action: 'cancel' }),
+  })
+  setSession(null)  // ← null karo, cancelled nahi
+  setItems([])
+}
 
   const pause = async () => {
     if (!session) return

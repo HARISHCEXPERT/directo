@@ -132,6 +132,61 @@
     return window.__directoFill.nativeSetValue(el, value)
   }
 
+  // ----- ACTION BUTTON DETECTION -----
+  // Find the most likely "next/continue" or "submit" button on the current step.
+  // Returns: { el, kind: 'next' | 'submit' } | null
+  // Heuristic-based (no AI cost) using button text + aria-label + name patterns.
+
+  const NEXT_RX = /^(next|continue|proceed|forward|save\s*&?\s*continue|step\s*\d|next\s*step|saqve)/i
+  const SUBMIT_RX = /^(submit|publish|launch|post|create|finish|save\s*&?\s*publish|complete|done|send for review|done|review)/i
+  const BACK_RX = /^(back|prev|previous|cancel|close|exit)/i
+
+  function btnText(el) {
+    const t = (el.innerText || el.value || el.getAttribute('aria-label') || el.title || '').replace(/\s+/g, ' ').trim()
+    return t
+  }
+
+  function isClickable(el) {
+    if (!el || el.disabled) return false
+    if (el.getAttribute('aria-disabled') === 'true') return false
+    if (!isVisible(el)) return false
+    return true
+  }
+
+  function findActionButton() {
+    const sels = 'button, input[type="submit"], input[type="button"], a[role="button"], [role="button"]'
+    const all = Array.from(document.querySelectorAll(sels)).filter(isClickable)
+    let nextBtn = null, submitBtn = null
+    for (const el of all) {
+      const text = btnText(el)
+      if (!text || text.length > 60) continue
+      if (BACK_RX.test(text)) continue
+      // Strongest signal: explicit type=submit
+      if (el.type === 'submit' && !submitBtn) {
+        // If the submit btn text says "next/continue" treat as next
+        if (NEXT_RX.test(text)) { nextBtn = nextBtn || el; continue }
+        submitBtn = el
+        continue
+      }
+      if (NEXT_RX.test(text)) { nextBtn = nextBtn || el; continue }
+      if (SUBMIT_RX.test(text)) { submitBtn = submitBtn || el; continue }
+    }
+    // Prefer NEXT if both — user clicks submit themselves
+    if (nextBtn) return { el: nextBtn, kind: 'next', text: btnText(nextBtn) }
+    if (submitBtn) return { el: submitBtn, kind: 'submit', text: btnText(submitBtn) }
+    return null
+  }
+
+  // A "form signature" — used to detect when the step has actually changed.
+  function formSignature() {
+    const fields = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]), textarea, select')
+    return Array.from(fields).slice(0, 30).map(f => {
+      return [f.name, f.id, f.placeholder, f.getAttribute('aria-label')].filter(Boolean).join('|')
+    }).join('::')
+  }
+
   window.__directoScanForm = scanForm
   window.__directoFillField = fillField
+  window.__directoFindActionButton = findActionButton
+  window.__directoFormSignature = formSignature
 })()

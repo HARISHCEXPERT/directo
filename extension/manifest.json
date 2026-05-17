@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Directo — AI Launch Autofill",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "AI auto-fills any SaaS directory submission form. Auto-detects when your listing is approved. By Directo.",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications", "alarms"],
   "host_permissions": [

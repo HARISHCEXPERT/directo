@@ -2,6 +2,13 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+
+  // Auth callback bypass — touch mat karo
+  if (path.startsWith('/auth/callback')) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -21,14 +28,13 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const path = request.nextUrl.pathname
 
-  // Not logged in → login page pe bhejo
+  // Not logged in → login pe bhejo
   if (!user && (path.startsWith('/dashboard') || path.startsWith('/onboarding'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Logged in user → onboarding check karo
+  // Logged in → onboarding check
   if (user && path.startsWith('/dashboard')) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -36,13 +42,12 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Profile nahi hai ya onboarding complete nahi → onboarding pe bhejo
     if (!profile || !profile.onboarding_completed) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }
 
-  // Logged in hai aur login/signup pe gaya → dashboard pe bhejo
+  // Logged in aur login/signup pe → dashboard pe bhejo
   if (user && (path === '/login' || path === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
@@ -51,11 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/onboarding',
-    '/login',
-    '/signup',
-    '/((?!auth/callback|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/dashboard/:path*', '/onboarding', '/login', '/signup'],
 }

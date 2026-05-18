@@ -10,181 +10,149 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [githubLoading, setGithubLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
-    }
+    if (error) { setError(error.message); setLoading(false) }
+    else router.push('/dashboard')
   }
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${location.origin}/dashboard` }
-    })
+    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${location.origin}/dashboard` } })
+  }
+
+  const handleGithub = async () => {
+    setGithubLoading(true)
+    await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: `${location.origin}/dashboard` } })
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-12">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/40 via-[#0a0a0a] to-blue-950/30" />
-        <div className="absolute top-0 left-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
+    <div style={{ minHeight: '100vh', background: '#fafaf8', display: 'flex', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@800&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .input { width:100%; background:white; border:1.5px solid #e8e8e8; border-radius:10px; padding:10px 14px; font-size:14px; color:#1a1a1a; outline:none; transition:border-color 0.2s; font-family:inherit; }
+        .input:focus { border-color:#667eea; }
+        .input::placeholder { color:#bbb; }
+        .oauth-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:white; border:1.5px solid #e8e8e8; border-radius:11px; padding:11px; font-size:14px; font-weight:600; color:#333; cursor:pointer; transition:border-color 0.2s,background 0.2s; font-family:inherit; }
+        .oauth-btn:hover { border-color:#ccc; background:#fafafa; }
+        .oauth-btn:disabled { opacity:0.6; cursor:default; }
+        .submit-btn { width:100%; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; border-radius:11px; padding:12px; font-size:15px; font-weight:700; cursor:pointer; transition:opacity 0.2s,transform 0.15s; font-family:inherit; }
+        .submit-btn:hover { opacity:0.9; transform:translateY(-1px); }
+        .submit-btn:disabled { opacity:0.5; cursor:default; transform:none; }
+      `}</style>
 
-        {/* Logo */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
+      {/* LEFT PANEL */}
+      <div style={{ width: '45%', background: 'linear-gradient(135deg,#667eea 0%,#764ba2 60%,#f093fb 100%)', padding: '48px 40px', flexDirection: 'column', justifyContent: 'space-between', display: 'flex' }} className="hidden lg:flex">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.2)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 13 }}>D</div>
+          <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 17, color: 'white' }}>Dicrecto</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {[
+            { val: '90+', label: 'Directories' },
+            { val: '2 min', label: 'To launch' },
+            { val: 'AI ⚡', label: 'Auto-fill' },
+            { val: 'Live', label: 'Tracking' },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 14, padding: '16px' }}>
+              <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 22, fontWeight: 800, color: 'white', marginBottom: 4 }}>{s.val}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>{s.label}</div>
             </div>
-            <span className="text-white font-semibold text-lg">Dicrecto</span>
+          ))}
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: '20px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 12 }}>
+            "Submitted my SaaS to 50 directories in one afternoon. Got 23 approved in week one."
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>👤</div>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>Indie founder, r/SideProject</span>
           </div>
         </div>
 
-        {/* Stats cards */}
-        <div className="relative z-10 space-y-4">
-          <p className="text-zinc-400 text-sm uppercase tracking-widest font-medium">Trusted by founders</p>
-          
-          {/* Floating stat cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-4">
-              <p className="text-2xl font-bold text-white">90+</p>
-              <p className="text-zinc-500 text-xs mt-1">Directories covered</p>
-            </div>
-            <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-4">
-              <p className="text-2xl font-bold text-white">2 min</p>
-              <p className="text-zinc-500 text-xs mt-1">To launch everywhere</p>
-            </div>
-            <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-4">
-              <p className="text-2xl font-bold text-violet-400">Auto</p>
-              <p className="text-zinc-500 text-xs mt-1">Submission engine</p>
-            </div>
-            <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-4">
-              <p className="text-2xl font-bold text-white">Live</p>
-              <p className="text-zinc-500 text-xs mt-1">Backlink tracking</p>
-            </div>
-          </div>
-
-          {/* Quote */}
-          <div className="bg-zinc-900/60 backdrop-blur border border-zinc-800 rounded-xl p-4 mt-4">
-            <p className="text-zinc-300 text-sm italic">"Submitted my SaaS to 50 directories in one click. Got 3 backlinks on day one."</p>
-            <div className="flex items-center gap-2 mt-3">
-              <div className="w-6 h-6 bg-violet-600 rounded-full" />
-              <p className="text-zinc-500 text-xs">Indie founder, ProductHunt</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom tagline */}
-        <div className="relative z-10">
-          <h2 className="text-3xl font-bold text-white leading-tight">
-            Launch your SaaS<br />
-            <span className="text-violet-400">everywhere.</span>
+        <div>
+          <h2 style={{ fontFamily: 'Syne,sans-serif', fontSize: 32, fontWeight: 800, color: 'white', lineHeight: 1.2, marginBottom: 8 }}>
+            Launch everywhere<br />before lunch.
           </h2>
-          <p className="text-zinc-500 mt-2 text-sm">One platform. 90+ directories. Zero hassle.</p>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14 }}>One platform. 90+ directories. Zero hassle.</p>
         </div>
       </div>
 
-      {/* Right side - Auth */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">D</span>
-            </div>
-            <span className="text-white font-semibold text-lg">Dicrecto</span>
+      {/* RIGHT PANEL */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
+            <div style={{ width: 30, height: 30, background: 'linear-gradient(135deg,#667eea,#764ba2)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 13 }}>D</div>
+            <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 17, color: '#1a1a1a' }}>Dicrecto</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
-          <p className="text-zinc-500 text-sm mt-1 mb-8">Sign in to your launch dashboard</p>
+          <h1 style={{ fontFamily: 'Syne,sans-serif', fontSize: 28, fontWeight: 800, color: '#1a1a1a', marginBottom: 6 }}>Welcome back</h1>
+          <p style={{ fontSize: 14, color: '#888', marginBottom: 28 }}>Sign in to your launch dashboard</p>
 
-          {/* Google Button */}
-          <button
-            onClick={handleGoogle}
-            disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 text-zinc-900 font-medium rounded-lg py-2.5 px-4 transition mb-4"
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-              <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
-              <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
-            </svg>
-            {googleLoading ? 'Redirecting...' : 'Continue with Google'}
-          </button>
+          {/* OAuth */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+            <button onClick={handleGoogle} disabled={googleLoading} className="oauth-btn">
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+                <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
+                <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+              </svg>
+              {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+            </button>
+            <button onClick={handleGithub} disabled={githubLoading} className="oauth-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#1a1a1a">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              {githubLoading ? 'Redirecting...' : 'Continue with GitHub'}
+            </button>
+          </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-zinc-800" />
-            <span className="text-zinc-600 text-xs">or continue with email</span>
-            <div className="flex-1 h-px bg-zinc-800" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ flex: 1, height: 1, background: '#eee' }} />
+            <span style={{ fontSize: 12, color: '#bbb' }}>or with email</span>
+            <div style={{ flex: 1, height: 1, background: '#eee' }} />
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">
+            <div style={{ background: '#fff5f5', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
               {error}
             </div>
           )}
 
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             <div>
-              <label className="text-sm text-zinc-400 mb-1.5 block">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="founder@startup.com"
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition text-sm"
-              />
+              <label style={{ fontSize: 13, color: '#555', fontWeight: 500, marginBottom: 6, display: 'block' }}>Email</label>
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="founder@startup.com" />
             </div>
-
             <div>
-              <div className="flex justify-between mb-1.5">
-                <label className="text-sm text-zinc-400">Password</label>
-                <span className="text-xs text-violet-400 cursor-pointer hover:text-violet-300">Forgot password?</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, color: '#555', fontWeight: 500 }}>Password</label>
+                <span style={{ fontSize: 12, color: '#667eea', cursor: 'pointer' }}>Forgot password?</span>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-violet-500 transition text-sm"
-              />
+              <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && handleLogin()} />
             </div>
-
-            <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium rounded-lg py-2.5 transition text-sm"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
           </div>
 
-          {/* Trust */}
-          <p className="text-zinc-600 text-xs text-center mt-4">
-            🔒 Your data is encrypted and private
-          </p>
+          <button className="submit-btn" onClick={handleLogin} disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign in →'}
+          </button>
 
-          <p className="text-zinc-500 text-sm text-center mt-6">
+          <p style={{ fontSize: 12, color: '#bbb', textAlign: 'center', marginTop: 14 }}>🔒 Your data is encrypted and private</p>
+
+          <p style={{ fontSize: 14, color: '#888', textAlign: 'center', marginTop: 20 }}>
             Don't have an account?{' '}
-            <Link href="/signup" className="text-violet-400 hover:text-violet-300">
-              Sign up free
-            </Link>
+            <Link href="/signup" style={{ color: '#667eea', fontWeight: 600, textDecoration: 'none' }}>Sign up free</Link>
           </p>
         </div>
       </div>

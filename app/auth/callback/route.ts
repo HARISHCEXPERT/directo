@@ -1,17 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
+export async function middleware(request: NextRequest) {
+  return NextResponse.next()
+}
 
-  if (code) {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    await supabase.auth.exchangeCodeForSession(code)
-  }
-
-  return NextResponse.redirect(`${origin}/dashboard`)
+export const config = {
+  matcher: ['/dashboard/:path*', '/onboarding', '/login', '/signup'],
 }

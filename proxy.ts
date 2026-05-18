@@ -33,25 +33,26 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Not logged in → login pe bhejo
   if (!user && (path.startsWith('/dashboard') || path.startsWith('/onboarding'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Logged in → onboarding check
   if (user && path.startsWith('/dashboard')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .single()
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single()
 
-    if (!profile || !profile.onboarding_completed) {
+      if (!profile || !profile.onboarding_completed) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+    } catch {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }
 
-  // Logged in aur login/signup pe → dashboard pe bhejo
   if (user && (path === '/login' || path === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

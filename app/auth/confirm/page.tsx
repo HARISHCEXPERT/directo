@@ -9,9 +9,15 @@ export default function ConfirmPage() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(() => {
-        // Hard redirect — browser fresh request karega cookies ke saath
-        window.location.href = '/dashboard'
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (data.session) {
+          // Session set hui — 500ms wait karo phir redirect
+          setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 500)
+        } else {
+          window.location.href = '/login'
+        }
       })
     } else {
       window.location.href = '/login'

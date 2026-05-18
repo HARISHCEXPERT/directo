@@ -16,9 +16,11 @@ export async function GET(req: NextRequest) {
         cookies: {
           getAll() { return cookieStore.getAll() },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            } catch {}
           },
         },
       }
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
+    console.error('Auth error:', error)
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_failed`)

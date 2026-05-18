@@ -1,36 +1,53 @@
-'use client'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname
 
-export default function ConfirmPage() {
-  const supabase = createClient()
+  if (
+    path.startsWith('/auth') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/api') ||
+    path === '/favicon.ico'
+  ) {
+    return NextResponse.next()
+  }
 
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (data.session) {
-          // Session set hui — 500ms wait karo phir redirect
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 500)
-        } else {
-          window.location.href = '/login'
-        }
-      })
-    } else {
-      window.location.href = '/login'
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options))
+        },
+      },
     }
-  }, [])
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafaf8' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid #667eea', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-        <p style={{ color: '#666', fontSize: 14 }}>Signing you in...</p>
-      </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-    </div>
   )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Sirf ye check — login/signup pe logged in user ko dashboard pe bhejo
+  if (user && (path === '/login' || path === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Dashboard pe bina login ke nahi jaane do
+  if (!user && path.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback|auth/confirm).*)',
+  ],
 }

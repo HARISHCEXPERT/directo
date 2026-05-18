@@ -8,8 +8,13 @@ export default function ConfirmPage() {
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code')
+    console.log('Code:', code)
+    
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        console.log('Session:', data.session)
+        console.log('Error:', error)
+        
         if (data.session) {
           setTimeout(() => {
             window.location.href = '/dashboard'

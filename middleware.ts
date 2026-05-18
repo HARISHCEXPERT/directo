@@ -51,5 +51,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/onboarding', '/login', '/signup'],
+  matcher: [
+    '/dashboard/:path*',
+    '/onboarding',
+    '/login',
+    '/signup',
+    '/((?!auth/callback|_next/static|_next/image|favicon.ico).*)',
+  ],
 }

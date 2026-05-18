@@ -33,28 +33,14 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && (path.startsWith('/dashboard') || path.startsWith('/onboarding'))) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  if (user && path.startsWith('/dashboard')) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || !profile.onboarding_completed) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
-      }
-    } catch {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
-  }
-
+  // Sirf ye check — login/signup pe logged in user ko dashboard pe bhejo
   if (user && (path === '/login' || path === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Dashboard pe bina login ke nahi jaane do
+  if (!user && path.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return supabaseResponse

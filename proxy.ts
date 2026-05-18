@@ -1,10 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  // Bypass karo ye sab
   if (
     path.startsWith('/auth') ||
     path.startsWith('/_next') ||
@@ -34,12 +33,10 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Not logged in → login pe bhejo
   if (!user && (path.startsWith('/dashboard') || path.startsWith('/onboarding'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Logged in → onboarding check
   if (user && path.startsWith('/dashboard')) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -52,7 +49,6 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Logged in aur login/signup pe → dashboard pe bhejo
   if (user && (path === '/login' || path === '/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

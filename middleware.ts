@@ -4,8 +4,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  // Auth callback bypass — touch mat karo
-  if (path.startsWith('/auth/callback')) {
+  // Bypass karo ye sab
+  if (
+    path.startsWith('/auth') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/api') ||
+    path === '/favicon.ico'
+  ) {
     return NextResponse.next()
   }
 
@@ -56,5 +61,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/onboarding', '/login', '/signup'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback).*)',
+  ],
 }

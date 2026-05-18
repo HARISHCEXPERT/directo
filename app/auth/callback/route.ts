@@ -3,60 +3,53 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  const { searchParams, origin } = new URL(req.url)
-  const code = searchParams.get('code')
+  const requestUrl = new URL(req.url)
+  const code = requestUrl.searchParams.get('code')
 
-  if (code) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch (e) {
-              console.error('Cookie set error:', e)
-            }
-          },
-        },
-      }
+  // Agar OAuth code nahi mila
+  if (!code) {
+    return NextResponse.redirect(
+      `${requestUrl.origin}/login?error=no_code`
     )
-
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (!error && data.session) {
-      const response = NextResponse.redirect(`${origin}/dashboard`)
-      
-      // Manually set cookies on response
-      const { access_token, refresh_token, expires_in } = data.session
-      
-      response.cookies.set('sb-access-token', access_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: expires_in,
-        path: '/',
-      })
-      response.cookies.set('sb-refresh-token', refresh_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 365,
-        path: '/',
-      })
-      
-      return response
-    }
-    
-    console.error('Exchange error:', error)
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  // Cookie store
+  const cookieStore = await cookies()
+
+  // Response object
+  const response = NextResponse.redirect(
+    `${requestUrl.origin}/dashboard`
+  )
+
+  // Supabase SSR client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  // OAuth code exchange
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (error) {
+    console.error('OAuth exchange error:', error)
+
+    return NextResponse.redirect(
+      `${requestUrl.origin}/login?error=auth_failed`
+    )
+  }
+
+  return response
 }

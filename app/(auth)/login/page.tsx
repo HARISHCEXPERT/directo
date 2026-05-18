@@ -22,16 +22,27 @@ export default function LoginPage() {
     else router.push('/dashboard')
   }
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true)
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${location.origin}/dashboard` } })
-  }
+ const handleGoogle = async () => {
+  setGoogleLoading(true)
 
-  const handleGithub = async () => {
-    setGithubLoading(true)
-    await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: `${location.origin}/dashboard` } })
-  }
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${location.origin}/auth/callback`
+    }
+  })
+}
 
+ const handleGithub = async () => {
+  setGithubLoading(true)
+
+  await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: `${location.origin}/auth/callback`
+    }
+  })
+}
   return (
     <div style={{ minHeight: '100vh', background: '#fafaf8', display: 'flex', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`

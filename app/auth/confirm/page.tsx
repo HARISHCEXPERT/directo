@@ -2,20 +2,19 @@
 
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 export default function ConfirmPage() {
-  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(() => {
-        router.push('/dashboard')
+        // Hard redirect — browser fresh request karega cookies ke saath
+        window.location.href = '/dashboard'
       })
     } else {
-      router.push('/login')
+      window.location.href = '/login'
     }
   }, [])
 
